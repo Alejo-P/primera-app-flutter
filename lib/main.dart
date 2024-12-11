@@ -2,6 +2,7 @@ import 'package:english_words/english_words.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+
 void main() {
   runApp(MyApp());
 }
@@ -35,8 +36,7 @@ class MyAppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  var favorites =
-      <WordPair>{}; // Variable para almacenar las palabras favoritas.
+  var favorites = <WordPair>{}; // Variable para almacenar las palabras favoritas.
 
   void toggleFavorite() {
     if (favorites.contains(current)) {
@@ -52,39 +52,82 @@ class MyAppState extends ChangeNotifier {
   }
 }
 
-class MyHomePage extends StatelessWidget {
+class MyHomePage extends StatefulWidget {
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  var selectedIndex = 0; // Índice de la pestaña seleccionada.
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Row(
-        children: [
-          SafeArea(
-            child: NavigationRail(
-              extended: false,
-              destinations: [
-                NavigationRailDestination(
-                  icon: Icon(Icons.home),
-                  label: Text('Home'),
+    Widget page;
+    switch (selectedIndex) {
+      case 0:
+        // Página de generador de palabras.
+        page = GeneratorPage();
+        break;
+      case 1:
+        // Página de favoritos.
+        page = FavoritesPage();
+        break;
+      default:
+        // Si no se selecciona ninguna pestaña, lanzar un error.
+        throw UnimplementedError('no widget for $selectedIndex');
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Scaffold(
+          body: Row(
+            children: [
+              SafeArea(
+                child: NavigationRail(
+                  extended: constraints.maxWidth > 600, // Extender la barra de navegación si el ancho es mayor a 600.
+                  destinations: [
+                    NavigationRailDestination(
+                      icon: Icon(Icons.home),
+                      label: Text(
+                        'Home',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Roboto',
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.favorite),
+                      label: Text(
+                        'Favorites',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Roboto',
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                  selectedIndex: selectedIndex, // Índice de la pestaña seleccionada.
+                  onDestinationSelected: (value) {
+                    print('selected: $value');
+                    setState(() {
+                      // Actualizar el índice de la pestaña seleccionada.
+                      selectedIndex = value;
+                    });
+                  },
                 ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.favorite),
-                  label: Text('Favorites'),
+              ),
+              Expanded(
+                child: Container(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  child: page, // Mostrar la página seleccionada.
                 ),
-              ],
-              selectedIndex: 0,
-              onDestinationSelected: (value) {
-                print('selected: $value');
-              },
-            ),
+              ),
+            ],
           ),
-          Expanded(
-            child: Container(
-              color: Theme.of(context).colorScheme.primaryContainer,
-              child: GeneratorPage(),
-            ),
-          ),
-        ],
-      ),
+        );
+      }
     );
   }
 }
@@ -92,7 +135,7 @@ class MyHomePage extends StatelessWidget {
 class GeneratorPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
+    var appState = context.watch<MyAppState>(); // Obtener el estado de la aplicación.
     var pair = appState.current; // Obtener la palabra actual.
 
     IconData icon; // Icono para el botón de favoritos.
@@ -162,10 +205,32 @@ class BigCard extends StatelessWidget {
         child: Text(
           pair.asPascalCase,
           style: style,
-          semanticsLabel:
-              "${pair.first} ${pair.second}", // Añadir etiqueta semántica (Para accesibilidad).
+          semanticsLabel: "${pair.first} ${pair.second}", // Añadir etiqueta semántica (Para accesibilidad).
         ),
       ),
+    );
+  }
+}
+
+class FavoritesPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>(); // Obtener el estado de la aplicación.
+    var favorites = appState.favorites; // Obtener la lista de favoritos.
+
+    return ListView.builder(
+      itemCount: favorites.length,
+      itemBuilder: (context, index) {
+        var pair = favorites.elementAt(index); // Obtener la palabra actual.
+
+        return ListTile(
+          title: Text(pair.asPascalCase), // Mostrar la palabra actual.
+          onTap: () {
+            // Llamar al método toggleFavorite() del estado de la aplicación.
+            appState.toggleFavorite();
+          },
+        );
+      },
     );
   }
 }
